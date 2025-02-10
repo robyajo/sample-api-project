@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
             DefaultUserSeeder::class,
             ProfileSeeder::class,
             MarketPlaceSeeder::class,
+            ContactDefaultSeeder::class
         ]);
     }
 }

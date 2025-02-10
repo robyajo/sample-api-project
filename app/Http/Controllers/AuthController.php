@@ -120,7 +120,7 @@ class AuthController extends BaseResponseApi
         try {
             // Ambil user berdasarkan email
             if (!$token = Auth::attempt($request->only('email', 'password'))) {
-                return $this->sendResponse('Email atau password yang Anda masukkan salah.', 'Login Gagal', 401);
+                return $this->sendValidationError(['Password Salah']);
             }
             // Get the authenticated user.
             $user = Auth::user();
@@ -136,10 +136,10 @@ class AuthController extends BaseResponseApi
                     'role' => $user->role,
                 ],
                 'access_token' => [
-                    'token' =>  $token,
+                    'token' => $token,
                     'token_type' => 'Bearer',
                     'expires_in' => auth()->factory()->getTTL() * 60
-                ]
+                ],
             ];
             return $this->sendResponse($responseData, 'Login berhasil');
         } catch (\Throwable $e) {
@@ -225,7 +225,7 @@ class AuthController extends BaseResponseApi
         try {
             // Cek keberadaan token
             if (!$request->bearerToken()) {
-                return $this->sendResponse(null, 'Session tidak ditemukan', false,  401);
+                return $this->sendResponse(null, 'Token tidak ditemukan', false, 401);
             }
 
             // Validasi token dan ambil user
@@ -233,8 +233,9 @@ class AuthController extends BaseResponseApi
             $user = JWTAuth::authenticate($token);
 
             if (!$user) {
-                return $this->sendResponse(null, 'User tidak ditemukan', false, 404);
+                return $this->sendResponse(null, 'User tidak ditemukan', false, 401);
             }
+
             $responseData = [
                 'user' => $user,
                 'access_token' => [
@@ -243,13 +244,13 @@ class AuthController extends BaseResponseApi
                     'expires_in' => auth()->factory()->getTTL() * 60
                 ]
             ];
-            return $this->sendResponse($responseData, 'Token berhasil diperbarui', false, 200);
+            return $this->sendResponse($responseData, 'Session aktif', true, 200);
         } catch (TokenExpiredException $e) {
-            return $this->sendResponse($e->getMessage(), 'Token telah kadaluarsa', false, 401);
+            return $this->sendResponse(null, 'Token telah kadaluarsa', false, 401);
         } catch (TokenInvalidException $e) {
-            return $this->sendResponse($e->getMessage(), 'Terjadi kesalahan saat memeriksa session', false, 401);
+            return $this->sendResponse(null, 'Token tidak valid', false, 401);
         } catch (JWTException $e) {
-            return $this->sendResponse($e->getMessage(), 'Tidak dapat memproses token', false, 401);
+            return $this->sendResponse(null, 'Token tidak bisa diproses', false, 401);
         } catch (\Exception $e) {
             Log::error('Error checking session: ' . $e->getMessage());
             return $this->sendServerError($e->getMessage(), 'Terjadi kesalahan saat memeriksa session', false, 500);
